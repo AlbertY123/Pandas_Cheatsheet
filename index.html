@@ -1,0 +1,1388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pandas Data Cleaning + Visualisation — Exam Cheatsheet</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1a2e;
+      --panel2:#0c1628;
+      --text:#e7eefc;
+      --muted:#a8b4d0;
+      --accent:#7dd3fc;
+      --accent2:#a78bfa;
+      --good:#34d399;
+      --warn:#fbbf24;
+      --bad:#fb7185;
+      --border:rgba(255,255,255,.09);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+
+      /* code blocks (fixed contrast across themes) */
+      --code-bg:#061024;
+      --code-fg:#e7eefc;
+    }
+
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#f6f8ff;
+        --panel:#ffffff;
+        --panel2:#f2f5ff;
+        --text:#0b1220;
+        --muted:#4b5563;
+        --border:rgba(2,6,23,.10);
+        --shadow: 0 10px 30px rgba(2,6,23,.10);
+
+        /* keep code blocks dark + readable */
+        --code-bg:#061024;
+        --code-fg:#e7eefc;
+      }
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 10% -10%, rgba(125,211,252,.22), transparent 60%),
+        radial-gradient(900px 600px at 110% 10%, rgba(167,139,250,.18), transparent 55%),
+        radial-gradient(900px 700px at 50% 120%, rgba(52,211,153,.10), transparent 60%),
+        var(--bg);
+      line-height:1.45;
+    }
+
+    a{color:var(--accent)}
+    .wrap{max-width:1200px; margin:0 auto; padding:24px 18px 64px}
+
+    header{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:16px;
+      align-items:start;
+      margin:10px 0 18px;
+    }
+
+    .hero{
+      background:linear-gradient(135deg, rgba(125,211,252,.14), rgba(167,139,250,.10));
+      border:1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius:18px;
+      padding:18px 18px;
+    }
+    .title{display:flex; gap:12px; align-items:center; margin:0 0 6px}
+    .badge{
+      font-family:var(--mono);
+      font-size:12px;
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:rgba(0,0,0,.12);
+    }
+
+    h1{font-size:22px; margin:0}
+    .subtitle{color:var(--muted); margin:6px 0 0; font-size:13px}
+
+    .controls{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      background:var(--panel);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      border-radius:18px;
+      padding:14px;
+    }
+
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+    .search{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:var(--panel2);
+      color:var(--text);
+      outline:none;
+    }
+
+    .btn{
+      cursor:pointer;
+      border:1px solid var(--border);
+      background:var(--panel2);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:12px;
+      font-size:13px;
+    }
+    .btn.primary{border-color:rgba(125,211,252,.35); background:rgba(125,211,252,.12)}
+
+    .hint{font-size:12px; color:var(--muted)}
+
+    .results{
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.08);
+      border-radius:14px;
+      padding:8px;
+      max-height:220px;
+      overflow:auto;
+    }
+    .results[hidden]{display:none}
+    .result-item{
+      display:block;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid transparent;
+      text-decoration:none;
+      color:var(--text);
+      background:rgba(255,255,255,.03);
+      margin:6px 0;
+      cursor:pointer;
+    }
+    .result-item:hover{border-color:rgba(125,211,252,.30); background:rgba(125,211,252,.10)}
+    .result-title{font-size:12px; color:var(--muted); margin-bottom:4px}
+    .result-snippet{font-family:var(--mono); font-size:12.5px; white-space:pre-wrap}
+    .flash{
+      outline:2px solid rgba(125,211,252,.65);
+      box-shadow:0 0 0 6px rgba(125,211,252,.12);
+      transition: box-shadow .25s ease;
+    }
+
+    main{display:grid; grid-template-columns: 300px 1fr; gap:16px; align-items:start; margin-top:16px}
+
+    nav{
+      position:sticky;
+      top:12px;
+      max-height:calc(100vh - 24px);
+      overflow:auto;
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:12px 12px;
+    }
+    nav h2{font-size:14px; margin:4px 6px 10px; color:var(--muted)}
+    .toc a{display:block; padding:7px 8px; border-radius:10px; text-decoration:none; color:var(--text)}
+    .toc a:hover{background:rgba(125,211,252,.10)}
+    .toc .small{font-size:12px; color:var(--muted)}
+
+    section{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px 16px;
+      margin-bottom:14px;
+    }
+
+    h2{font-size:18px; margin:0 0 10px}
+    h3{font-size:14px; margin:16px 0 8px; color:var(--accent)}
+
+    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    @media (max-width: 980px){
+      header{grid-template-columns: 1fr}
+      main{grid-template-columns: 1fr}
+      nav{position:relative; top:auto; max-height:none}
+      .grid2{grid-template-columns: 1fr}
+    }
+
+    .callout{
+      border:1px solid var(--border);
+      background:linear-gradient(135deg, rgba(52,211,153,.09), rgba(125,211,252,.07));
+      border-radius:16px;
+      padding:12px;
+      color:var(--text);
+    }
+    .callout strong{color:var(--good)}
+
+    .pill{
+      display:inline-block;
+      font-family:var(--mono);
+      font-size:12px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.10);
+      margin:2px 6px 2px 0;
+    }
+
+    pre{
+      margin:10px 0 0;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: var(--code-bg);
+      color: var(--code-fg);
+      overflow:auto;
+      position:relative;
+    }
+
+    code{font-family:var(--mono); font-size:12.5px; color:inherit}
+
+    .copy{
+      position:absolute;
+      top:10px;
+      right:10px;
+      font-family:var(--mono);
+      font-size:12px;
+      padding:5px 8px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.10);
+      color:var(--code-fg);
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .kpi{display:flex; gap:10px; flex-wrap:wrap}
+    .kpi > div{flex:1; min-width:210px; border:1px solid var(--border); border-radius:16px; padding:10px; background:var(--panel2)}
+    .kpi .label{font-size:12px; color:var(--muted)}
+    .kpi .value{font-family:var(--mono); font-size:12.5px; margin-top:6px}
+
+    .table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:var(--panel2);
+      margin-top:10px;
+    }
+    .table th, .table td{padding:10px 10px; font-size:13px; border-bottom:1px solid var(--border); vertical-align:top}
+    .table th{color:var(--muted); text-align:left; font-weight:600; background:rgba(125,211,252,.05)}
+    .table tr:last-child td{border-bottom:none}
+    .mono{font-family:var(--mono)}
+
+    .tag{
+      font-size:12px;
+      font-family:var(--mono);
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      color:var(--muted);
+      margin-left:6px;
+    }
+
+    .muted{color:var(--muted)}
+
+    /* print */
+    @media print{
+      body{background:#fff}
+      header, nav, .controls{display:none !important}
+      .wrap{max-width:none; padding:0}
+      section{box-shadow:none; border:1px solid #ddd; break-inside:avoid; margin:10px 0}
+      pre{background:#f7f7f7; color:#000}
+      .copy{display:none}
+      a{color:#000; text-decoration:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="hero">
+        <div class="title">
+          <div class="badge">pandas • cleaning • viz</div>
+          <h1>Pandas Data Cleaning + Visualisation — Exam Cheatsheet</h1>
+        </div>
+        <p class="subtitle">
+          Fast recall for <span class="pill">inspect</span> <span class="pill">clean</span> <span class="pill">transform</span>
+          <span class="pill">merge</span> <span class="pill">groupby</span> <span class="pill">plot</span>.
+          Built to be readable on a phone and printable.
+        </p>
+        <div class="kpi" style="margin-top:12px">
+          <div>
+            <div class="label">Golden rule</div>
+            <div class="value">df = df.copy()  # before risky chained ops</div>
+          </div>
+          <div>
+            <div class="label">Most-used trio</div>
+            <div class="value">df.info(); df.describe(); df.isna().mean()</div>
+          </div>
+          <div>
+            <div class="label">Plot starter</div>
+            <div class="value">ax = df.plot(kind="hist", y="col", bins=30)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <input id="search" class="search" placeholder="Search (e.g., merge, fillna, datetime, groupby, seaborn, heatmap...)" />
+        <div class="row">
+          <button class="btn primary" id="expandAll">Expand all</button>
+          <button class="btn" id="collapseAll">Collapse all</button>
+          <button class="btn" onclick="window.print()">Print</button>
+        </div>
+        <div class="hint">
+          Tip: search matches both section text <em>and</em> code commands. Click a result to jump.
+          (Browser find <span class="mono">Ctrl+F</span> still works.)
+        </div>
+        <div id="results" class="results" hidden></div>
+      </div>
+    </header>
+
+    <main>
+      <nav>
+        <h2>Table of contents</h2>
+        <div class="toc" id="toc">
+          <a href="#setup">0. Setup & read data <span class="tag">io</span></a>
+          <a href="#inspect">1. Quick inspection <span class="tag">eda</span></a>
+          <a href="#missing">2. Missing values <span class="tag">na</span></a>
+          <a href="#types">3. Types & parsing <span class="tag">dtype</span></a>
+          <a href="#strings">4. String cleaning <span class="tag">str</span></a>
+          <a href="#dates">5. Datetime tricks <span class="tag">dt</span></a>
+          <a href="#duplicates">6. Duplicates & integrity <span class="tag">qa</span></a>
+          <a href="#outliers">7. Outliers & caps <span class="tag">stats</span></a>
+          <a href="#reshape">8. Reshape (melt/pivot) <span class="tag">tidy</span></a>
+          <a href="#merge">9. Combine data (merge/join/concat) <span class="tag">sql</span></a>
+          <a href="#groupby">10. GroupBy & aggregation <span class="tag">agg</span></a>
+          <a href="#window">11. Window functions <span class="tag">rolling</span></a>
+          <a href="#viz-pandas">12. Visualisation: pandas plot <span class="tag">plt</span></a>
+          <a href="#viz-seaborn">13. Visualisation: seaborn <span class="tag">sns</span></a>
+          <a href="#viz-mpl">14. Matplotlib essentials <span class="tag">ax</span></a>
+          <a href="#viz-recipes">15. Viz recipes <span class="tag">cookbook</span></a>
+          <a href="#pitfalls">16. Common pitfalls <span class="tag">exam</span></a>
+          <a href="#cleaning-recipes">17. Cleaning cookbook <span class="tag">qa</span></a>
+          <a href="#encoding">18. Encoding & binning <span class="tag">feat</span></a>
+          <a href="#performance">19. Performance & memory <span class="tag">speed</span></a>
+          <a href="#viz-guide">20. Viz guide (choose plot) <span class="tag">maps</span></a>
+          <a href="#viz-advanced">21. Viz advanced patterns <span class="tag">pro</span></a>
+        </div>
+        <p class="muted" style="margin:10px 6px 0; font-size:12px">
+          If your exam allows notes: print this as 2–4 pages, or keep it offline on your laptop.
+        </p>
+      </nav>
+
+      <div>
+
+        <section id="setup" class="card" data-title="setup read_csv to_parquet io">
+          <h2>0) Setup & read data</h2>
+          <div class="grid2">
+            <div>
+              <div class="callout">
+                <strong>Goal:</strong> load cleanly, set types early, and keep raw data untouched.
+              </div>
+              <table class="table">
+                <tr><th>Task</th><th>Go-to</th></tr>
+                <tr><td>Read CSV</td><td class="mono">pd.read_csv(...)</td></tr>
+                <tr><td>Better types</td><td class="mono">dtype=..., parse_dates=..., na_values=...</td></tr>
+                <tr><td>Write fast</td><td class="mono">df.to_parquet("x.parquet")</td></tr>
+              </table>
+            </div>
+            <div>
+<pre><div class="copy" data-copy>copy</div><code>import pandas as pd
+import numpy as np
+
+# Read (robust starter)
+df = pd.read_csv(
+    "file.csv",
+    na_values=["", "NA", "N/A", "null", "None"],
+    keep_default_na=True,
+    encoding_errors="ignore",
+)
+
+# Good hygiene
+raw = df.copy()      # keep original
+df = df.copy()       # work copy
+
+# Faster + smaller (if allowed)
+df.to_parquet("clean.parquet", index=False)</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="inspect" class="card" data-title="inspect info describe head sample value_counts nunique">
+          <h2>1) Quick inspection (EDA in 60 seconds)</h2>
+          <div class="grid2">
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># shape / columns
+df.shape
+list(df.columns)
+
+# quick look
+df.head(3)
+df.tail(3)
+df.sample(5, random_state=0)
+
+# schema + missingness
+df.info()
+df.isna().sum()
+df.isna().mean().sort_values(ascending=False)
+
+# numeric summary (include='all' for mixed)
+df.describe().T
+
+# categorical quick check
+df["col"].value_counts(dropna=False)
+df["col"].nunique(dropna=True)</code></pre>
+            </div>
+            <div>
+              <table class="table">
+                <tr><th>Question</th><th>Answer</th></tr>
+                <tr><td>How many missing per column?</td><td class="mono">df.isna().sum()</td></tr>
+                <tr><td>Which columns are worst?</td><td class="mono">df.isna().mean().sort_values(False)</td></tr>
+                <tr><td>Unique values?</td><td class="mono">df[col].nunique()</td></tr>
+                <tr><td>Distribution?</td><td class="mono">df[col].hist(bins=30)</td></tr>
+              </table>
+              <p class="muted" style="margin:10px 0 0">
+                Exam note: <span class="mono">describe()</span> ignores non-numeric unless you add <span class="mono">include="all"</span>.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="missing" class="card" data-title="missing fillna dropna isna notna interpolate ffill bfill">
+          <h2>2) Missing values (NA/NaN)</h2>
+
+          <div class="grid2">
+            <div>
+              <h3>Common patterns</h3>
+              <table class="table">
+                <tr><th>Pattern</th><th>Use</th></tr>
+                <tr><td>Drop rows with any NA</td><td class="mono">df.dropna()</td></tr>
+                <tr><td>Drop if NA in specific cols</td><td class="mono">df.dropna(subset=["a","b"])</td></tr>
+                <tr><td>Fill constant</td><td class="mono">df["c"].fillna(0)</td></tr>
+                <tr><td>Fill per-group</td><td class="mono">df.groupby("g")["c"].transform(lambda s: s.fillna(s.median()))</td></tr>
+                <tr><td>Forward/back fill (time)</td><td class="mono">df.sort_values("date").ffill()</td></tr>
+                <tr><td>Interpolate (numeric series)</td><td class="mono">s.interpolate(method="linear")</td></tr>
+              </table>
+            </div>
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># What counts as missing?
+df.isna()          # True/False mask
+pd.isna(df["x"])   # works for scalars too
+
+# Simple fills
+median = df["age"].median()
+df["age"] = df["age"].fillna(median)
+
+# Fill with multiple strategies
+fill_map = {"city": "Unknown", "score": 0}
+df = df.fillna(fill_map)
+
+# Per-group fill (very exam-friendly)
+df["salary"] = (
+    df.groupby("department")["salary"]
+      .transform(lambda s: s.fillna(s.median()))
+)
+
+# Drop columns with too much missing
+keep = df.isna().mean() < 0.4
+df = df.loc[:, keep]</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="types" class="card" data-title="types astype to_numeric to_datetime convert_dtypes category">
+          <h2>3) Types & parsing (numbers, bools, categories)</h2>
+          <div class="grid2">
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># Inspect dtypes
+df.dtypes
+
+# Convert smartly (nullable dtypes)
+df = df.convert_dtypes()  # Int64, string, boolean, etc.
+
+# Numeric parsing (handles bad values -> NaN)
+df["price"] = pd.to_numeric(df["price"], errors="coerce")
+
+# Booleans
+truthy = {"y": True, "yes": True, "n": False, "no": False}
+df["ok"] = df["ok"].str.lower().map(truthy)
+
+# Categories (memory + speed on groupby)
+df["state"] = df["state"].astype("category")</code></pre>
+            </div>
+            <div>
+              <div class="callout">
+                <strong>Exam tip:</strong> prefer <span class="mono">pd.to_numeric(..., errors="coerce")</span> over <span class="mono">astype(float)</span> when data is messy.
+              </div>
+              <table class="table">
+                <tr><th>Goal</th><th>Method</th></tr>
+                <tr><td>Safe numeric cast</td><td class="mono">pd.to_numeric</td></tr>
+                <tr><td>Safe datetime cast</td><td class="mono">pd.to_datetime</td></tr>
+                <tr><td>Nullable ints</td><td class="mono">Int64 dtype</td></tr>
+                <tr><td>Downcast floats/ints</td><td class="mono">pd.to_numeric(..., downcast="integer")</td></tr>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="strings" class="card" data-title="strings str lower strip replace contains extract regex">
+          <h2>4) String cleaning (the <span class="mono">.str</span> accessor)</h2>
+          <div class="grid2">
+            <div>
+              <table class="table">
+                <tr><th>Task</th><th>Pattern</th></tr>
+                <tr><td>Lower/trim</td><td class="mono">s.str.lower().str.strip()</td></tr>
+                <tr><td>Replace</td><td class="mono">s.str.replace(" ", "_", regex=False)</td></tr>
+                <tr><td>Regex replace</td><td class="mono">s.str.replace(r"\s+", " ", regex=True)</td></tr>
+                <tr><td>Contains</td><td class="mono">s.str.contains("foo", na=False)</td></tr>
+                <tr><td>Extract groups</td><td class="mono">s.str.extract(r"(\d+)")</td></tr>
+                <tr><td>Split into columns</td><td class="mono">s.str.split("-", expand=True)</td></tr>
+              </table>
+            </div>
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># Clean column names
+(df.rename(columns=lambda c: c.strip().lower().replace(" ", "_")))
+
+# Clean a text column
+s = df["name"].astype("string")
+df["name"] = (
+    s.str.strip()
+     .str.replace(r"\s+", " ", regex=True)
+     .str.title()
+)
+
+# Filter rows with a substring
+mask = df["email"].astype("string").str.contains("@gmail.com", na=False)
+gmail = df.loc[mask]
+
+# Extract numeric part
+# "Item-123" -> 123
+df["item_id"] = df["item"].astype("string").str.extract(r"(\d+)").astype("Int64")</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="dates" class="card" data-title="datetime to_datetime dt floor round month year dayofweek tz">
+          <h2>5) Datetime tricks (the <span class="mono">.dt</span> accessor)</h2>
+          <div class="grid2">
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># Parse
+df["date"] = pd.to_datetime(df["date"], errors="coerce")
+
+# Components
+(df["date"].dt.year)
+(df["date"].dt.month)
+(df["date"].dt.day)
+(df["date"].dt.day_name())
+(df["date"].dt.to_period("M"))
+
+# Sort + resample (time series)
+df = df.sort_values("date")
+weekly = (
+    df.set_index("date")
+      .resample("W")["sales"].sum()
+)
+
+# Timezone
+s = pd.to_datetime(df["ts"], utc=True)
+df["ts_sydney"] = s.dt.tz_convert("Australia/Sydney")</code></pre>
+            </div>
+            <div>
+              <table class="table">
+                <tr><th>Need</th><th>Use</th></tr>
+                <tr><td>Round timestamps</td><td class="mono">s.dt.floor("H"), s.dt.round("15min")</td></tr>
+                <tr><td>Filter by date range</td><td class="mono">df[df["date"].between("2025-01-01","2025-01-31")]</td></tr>
+                <tr><td>Month buckets</td><td class="mono">s.dt.to_period("M")</td></tr>
+                <tr><td>Resample</td><td class="mono">df.set_index("date").resample("D")</td></tr>
+              </table>
+              <p class="muted" style="margin:10px 0 0">Resample needs a datetime index (or <span class="mono">on=</span> parameter).</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="duplicates" class="card" data-title="duplicates drop_duplicates duplicated unique validate integrity">
+          <h2>6) Duplicates & data integrity checks</h2>
+          <div class="grid2">
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># Detect duplicates
+rows_dup = df.duplicated()
+df.loc[rows_dup]
+
+# Deduplicate by key columns
+clean = df.drop_duplicates(subset=["id"], keep="first")
+
+# Check key uniqueness (good before merge)
+(df["id"].is_unique)
+
+# Find conflicting duplicates (same id, different values)
+conf = (df.groupby("id")["status"].nunique() > 1)
+conflicting_ids = conf[conf].index
+df[df["id"].isin(conflicting_ids)].sort_values("id")</code></pre>
+            </div>
+            <div>
+              <table class="table">
+                <tr><th>Check</th><th>One-liner</th></tr>
+                <tr><td>Unique key?</td><td class="mono">df["id"].is_unique</td></tr>
+                <tr><td>Count dups</td><td class="mono">df.duplicated().sum()</td></tr>
+                <tr><td>Keep last dup</td><td class="mono">df.drop_duplicates("id", keep="last")</td></tr>
+                <tr><td>Audit duplicates</td><td class="mono">df[df.duplicated("id", keep=False)]</td></tr>
+              </table>
+              <div class="callout" style="margin-top:10px">
+                <strong>Merge safety:</strong> use <span class="mono">merge(validate="1:1")</span> / <span class="mono">"1:m"</span> / <span class="mono">"m:1"</span> to catch bad joins.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="outliers" class="card" data-title="outliers clip quantile iqr zscore winsorize">
+          <h2>7) Outliers (IQR, quantiles, clipping)</h2>
+          <div class="grid2">
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># IQR rule
+x = df["amount"].dropna()
+q1, q3 = x.quantile([0.25, 0.75])
+iqr = q3 - q1
+lo, hi = q1 - 1.5*iqr, q3 + 1.5*iqr
+
+outliers = df[(df["amount"] < lo) | (df["amount"] > hi)]
+
+# Clip (winsorise)
+df["amount_clip"] = df["amount"].clip(lo, hi)
+
+# Quantile clip (simple + common)
+lo2, hi2 = df["amount"].quantile([0.01, 0.99])
+df["amount"] = df["amount"].clip(lo2, hi2)</code></pre>
+            </div>
+            <div>
+              <table class="table">
+                <tr><th>When</th><th>Do</th></tr>
+                <tr><td>Keep rows but reduce effect</td><td class="mono">clip()</td></tr>
+                <tr><td>Remove extreme rows</td><td class="mono">df[df[col].between(lo, hi)]</td></tr>
+                <tr><td>Visualise outliers</td><td class="mono">df.boxplot(column=col)</td></tr>
+              </table>
+              <p class="muted" style="margin:10px 0 0">
+                In exams: justify your choice (drop vs clip) based on whether outliers are errors or real rare events.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="reshape" class="card" data-title="reshape melt pivot pivot_table wide long stack unstack">
+          <h2>8) Reshape (wide/long): <span class="mono">melt</span>, <span class="mono">pivot</span>, <span class="mono">pivot_table</span></h2>
+          <div class="grid2">
+            <div>
+              <table class="table">
+                <tr><th>Want</th><th>Use</th></tr>
+                <tr><td>Wide → long</td><td class="mono">pd.melt</td></tr>
+                <tr><td>Long → wide (no duplicates)</td><td class="mono">pivot</td></tr>
+                <tr><td>Long → wide (aggregate duplicates)</td><td class="mono">pivot_table</td></tr>
+                <tr><td>MultiIndex reshapes</td><td class="mono">stack / unstack</td></tr>
+              </table>
+            </div>
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># Wide -> Long
+long = df.melt(
+    id_vars=["id", "date"],
+    value_vars=["sales", "profit"],
+    var_name="metric",
+    value_name="value",
+)
+
+# Long -> Wide (requires unique index/columns pairs)
+wide = long.pivot(index="date", columns="metric", values="value")
+
+# Long -> Wide with aggregation
+wide2 = long.pivot_table(
+    index="date",
+    columns="metric",
+    values="value",
+    aggfunc="sum",
+    fill_value=0,
+)</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="merge" class="card" data-title="merge join concat sql left right inner outer validate indicator">
+          <h2>9) Combine data (SQL-style joins)</h2>
+          <div class="grid2">
+            <div>
+              <table class="table">
+                <tr><th>Task</th><th>Pattern</th></tr>
+                <tr><td>Row-bind (stack)</td><td class="mono">pd.concat([a,b], axis=0, ignore_index=True)</td></tr>
+                <tr><td>Column-bind</td><td class="mono">pd.concat([a,b], axis=1)</td></tr>
+                <tr><td>Join by key</td><td class="mono">a.merge(b, on="id", how="left")</td></tr>
+                <tr><td>Join on index</td><td class="mono">a.join(b, how="left")</td></tr>
+                <tr><td>Audit unmatched</td><td class="mono">indicator=True</td></tr>
+              </table>
+              <div class="callout" style="margin-top:10px">
+                <strong>Best practice:</strong> for merges, specify <span class="mono">validate=</span> and <span class="mono">suffixes=</span>.
+              </div>
+            </div>
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># Basic merge
+out = a.merge(b, on="id", how="left", suffixes=("_a", "_b"))
+
+# Merge with integrity checks
+out = a.merge(
+    b,
+    on=["id", "date"],
+    how="inner",
+    validate="1:1",      # or "1:m", "m:1", "m:m"
+    indicator=True,      # adds _merge column
+)
+
+# Find rows that didn't match
+unmatched = out[out["_merge"] != "both"]
+
+# Concat rows (same columns)
+stacked = pd.concat([jan, feb, mar], ignore_index=True)</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="groupby" class="card" data-title="groupby agg transform filter named aggregation size count mean sum">
+          <h2>10) GroupBy & aggregation (most exam marks live here)</h2>
+
+          <div class="grid2">
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># Basic
+(df.groupby("dept")["salary"].mean())
+
+# Multiple aggs
+(df.groupby("dept")["salary"].agg(["count", "mean", "median"]))
+
+# Named aggregation (clean columns)
+out = (
+  df.groupby(["dept", "year"], dropna=False)
+    .agg(
+      n=("id", "size"),
+      avg_salary=("salary", "mean"),
+      p90_salary=("salary", lambda s: s.quantile(0.9)),
+    )
+    .reset_index()
+)
+
+# transform = return same length (good for filling/scaling)
+df["salary_z"] = (
+  df.groupby("dept")["salary"]
+    .transform(lambda s: (s - s.mean()) / s.std())
+)
+
+# filter = keep whole groups based on condition
+big_depts = df.groupby("dept").filter(lambda g: len(g) >= 30)</code></pre>
+            </div>
+            <div>
+              <table class="table">
+                <tr><th>Need</th><th>Use</th></tr>
+                <tr><td>Group counts</td><td class="mono">df.groupby(k).size()</td></tr>
+                <tr><td>Count non-null</td><td class="mono">df.groupby(k)[col].count()</td></tr>
+                <tr><td>Same length output</td><td class="mono">transform</td></tr>
+                <tr><td>Reduce to summary</td><td class="mono">agg</td></tr>
+                <tr><td>Subset groups</td><td class="mono">filter</td></tr>
+              </table>
+              <p class="muted" style="margin:10px 0 0">If NA groups matter, add <span class="mono">dropna=False</span> to <span class="mono">groupby</span>.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="window" class="card" data-title="rolling expanding ewm window shift diff cumulative">
+          <h2>11) Window functions (rolling, expanding, shift)</h2>
+          <div class="grid2">
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># Sort by time first
+s = df.sort_values("date").set_index("date")["sales"]
+
+# Rolling mean
+roll7 = s.rolling(7, min_periods=1).mean()
+
+# Rolling by time offset
+roll30d = s.rolling("30D").sum()
+
+# Expanding (cumulative)
+exp = s.expanding(min_periods=1).mean()
+
+# Shift / diff
+s_lag1 = s.shift(1)
+delta = s.diff(1)</code></pre>
+            </div>
+            <div>
+              <table class="table">
+                <tr><th>Concept</th><th>Method</th></tr>
+                <tr><td>Lag features</td><td class="mono">shift(k)</td></tr>
+                <tr><td>Change over time</td><td class="mono">diff(k)</td></tr>
+                <tr><td>Moving average</td><td class="mono">rolling(n).mean()</td></tr>
+                <tr><td>EMA smoothing</td><td class="mono">ewm(span=...).mean()</td></tr>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="viz-pandas" class="card" data-title="visualisation visualization pandas plot line bar hist box scatter kde area">
+          <h2>12) Visualisation (pandas built-in)</h2>
+          <div class="grid2">
+            <div>
+              <div class="callout">
+                <strong>Fastest:</strong> <span class="mono">df.plot(...)</span> gives you a Matplotlib Axes you can customise.
+              </div>
+              <table class="table">
+                <tr><th>Chart</th><th>Pattern</th></tr>
+                <tr><td>Line</td><td class="mono">df.plot(x="date", y="sales")</td></tr>
+                <tr><td>Bar</td><td class="mono">df.plot(kind="bar", x="cat", y="value")</td></tr>
+                <tr><td>Histogram</td><td class="mono">df["x"].plot(kind="hist", bins=30)</td></tr>
+                <tr><td>Box</td><td class="mono">df.boxplot(column="x", by="group")</td></tr>
+                <tr><td>Scatter</td><td class="mono">df.plot(kind="scatter", x="x", y="y")</td></tr>
+              </table>
+            </div>
+            <div>
+<pre><div class="copy" data-copy>copy</div><code>import matplotlib.pyplot as plt
+
+# Histogram
+ax = df["score"].plot(kind="hist", bins=30, title="Score distribution")
+ax.set_xlabel("score")
+
+# Scatter + alpha helps overplotting
+ax = df.plot(kind="scatter", x="height", y="weight", alpha=0.35)
+
+# Grouped bar (prep + plot)
+pt = df.pivot_table(index="dept", columns="year", values="sales", aggfunc="sum")
+ax = pt.plot(kind="bar", figsize=(8,4))
+plt.tight_layout()</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="viz-seaborn" class="card" data-title="seaborn sns histplot displot boxplot violinplot scatterplot lineplot barplot countplot heatmap">
+          <h2>13) Visualisation (seaborn)</h2>
+          <div class="grid2">
+            <div>
+<pre><div class="copy" data-copy>copy</div><code>import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.set_theme(style="whitegrid")
+
+# Distribution
+sns.histplot(df, x="score", bins=30, kde=True)
+
+# Categorical comparisons
+sns.boxplot(df, x="dept", y="salary")
+
+# Relationships
+sns.scatterplot(df, x="height", y="weight", hue="sex", alpha=0.5)
+
+# Time series
+sns.lineplot(df, x="date", y="sales", hue="region")
+plt.xticks(rotation=45)
+plt.tight_layout()</code></pre>
+            </div>
+            <div>
+              <table class="table">
+                <tr><th>Need</th><th>Use</th></tr>
+                <tr><td>Counts per category</td><td class="mono">sns.countplot(df, x="cat")</td></tr>
+                <tr><td>Mean + CI bars</td><td class="mono">sns.barplot(df, x="cat", y="val")</td></tr>
+                <tr><td>Correlation heatmap</td><td class="mono">sns.heatmap(df.corr(numeric_only=True))</td></tr>
+                <tr><td>Pairwise overview</td><td class="mono">sns.pairplot(df[[...]], hue="label")</td></tr>
+              </table>
+              <p class="muted" style="margin:10px 0 0">
+                Seaborn usually wants “tidy” (long) data: one column per variable, one row per observation.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="viz-mpl" class="card" data-title="matplotlib subplots ax labels title legend figsize savefig tight_layout">
+          <h2>14) Matplotlib essentials (labels, subplots, saving)</h2>
+          <div class="grid2">
+            <div>
+<pre><div class="copy" data-copy>copy</div><code>import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(df["x"], df["y"], label="y")
+ax.set(title="My plot", xlabel="x", ylabel="y")
+ax.legend()
+ax.grid(True, alpha=0.3)
+fig.tight_layout()
+fig.savefig("plot.png", dpi=200)</code></pre>
+            </div>
+            <div>
+              <table class="table">
+                <tr><th>Task</th><th>Use</th></tr>
+                <tr><td>Multiple plots</td><td class="mono">fig, axs = plt.subplots(r, c)</td></tr>
+                <tr><td>Rotate ticks</td><td class="mono">plt.xticks(rotation=45)</td></tr>
+                <tr><td>Layout</td><td class="mono">plt.tight_layout()</td></tr>
+                <tr><td>Save</td><td class="mono">fig.savefig("x.png", dpi=200)</td></tr>
+              </table>
+              <div class="callout" style="margin-top:10px">
+                <strong>Exam tip:</strong> if plots overlap, the first fix is <span class="mono">tight_layout()</span>.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="viz-recipes" class="card" data-title="recipes heatmap missingness correlation distribution compare">
+          <h2>15) Useful visualisation recipes</h2>
+
+          <h3>A) Missingness bar chart</h3>
+<pre><div class="copy" data-copy>copy</div><code>import matplotlib.pyplot as plt
+
+miss = df.isna().mean().sort_values(ascending=False)
+ax = miss.plot(kind="bar", figsize=(8,3), title="Missing fraction by column")
+ax.set_ylabel("fraction")
+plt.tight_layout()</code></pre>
+
+          <h3>B) Correlation heatmap (numeric only)</h3>
+<pre><div class="copy" data-copy>copy</div><code>import seaborn as sns
+import matplotlib.pyplot as plt
+
+corr = df.corr(numeric_only=True)
+plt.figure(figsize=(7,5))
+sns.heatmap(corr, cmap="vlag", center=0, annot=False)
+plt.title("Correlation")
+plt.tight_layout()</code></pre>
+
+          <h3>C) Top-N categories (clean, readable)</h3>
+<pre><div class="copy" data-copy>copy</div><code>top = df["category"].value_counts().head(10)
+ax = top.sort_values().plot(kind="barh", figsize=(7,4), title="Top 10 categories")
+ax.set_xlabel("count")
+plt.tight_layout()</code></pre>
+
+          <h3>D) Grouped time series (prep + plot)</h3>
+<pre><div class="copy" data-copy>copy</div><code># daily sum per region
+out = (df
+  .assign(date=pd.to_datetime(df["date"]))
+  .groupby(["region", "date"], as_index=False)["sales"].sum()
+)
+
+sns.lineplot(out, x="date", y="sales", hue="region")
+plt.xticks(rotation=45)
+plt.tight_layout()</code></pre>
+        </section>
+
+        <section id="pitfalls" class="card" data-title="pitfalls settingwithcopy chained indexing inplace copy view warnings">
+          <h2>16) Common pitfalls (things that cost marks/time)</h2>
+
+          <div class="grid2">
+            <div>
+              <h3>SettingWithCopy (chained indexing)</h3>
+              <p class="muted">Bad:</p>
+<pre><div class="copy" data-copy>copy</div><code>df[df["x"] &gt; 0]["y"] = 1  # may not update original!</code></pre>
+              <p class="muted">Good:</p>
+<pre><div class="copy" data-copy>copy</div><code>df.loc[df["x"] &gt; 0, "y"] = 1</code></pre>
+
+              <h3>Merge explosions</h3>
+<pre><div class="copy" data-copy>copy</div><code># Always validate expected cardinality
+out = left.merge(right, on="id", how="left", validate="1:1")</code></pre>
+            </div>
+            <div>
+              <h3>Other gotchas</h3>
+              <table class="table">
+                <tr><th>Gotcha</th><th>Fix</th></tr>
+                <tr><td><span class="mono">inplace=True</span> confusion</td><td>Prefer assignment: <span class="mono">df = df.dropna()</span></td></tr>
+                <tr><td>Strings mixed with NaN</td><td><span class="mono">astype("string")</span> then <span class="mono">.str...</span></td></tr>
+                <tr><td><span class="mono">groupby.size()</span> vs <span class="mono">count()</span></td><td><span class="mono">size</span> counts rows; <span class="mono">count</span> ignores NA</td></tr>
+                <tr><td>Datetime not parsed</td><td><span class="mono">pd.to_datetime(..., errors="coerce")</span></td></tr>
+                <tr><td>Plot unreadable</td><td><span class="mono">figsize</span>, rotate ticks, <span class="mono">tight_layout()</span></td></tr>
+              </table>
+
+              <div class="callout" style="margin-top:10px">
+                <strong>Pipeline mindset:</strong>
+                Inspect → fix dtypes → handle missing → validate keys → transform/aggregate → visualise → export.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="cleaning-recipes" class="card" data-title="data cleaning validate schema assert range isin replace map where mask clip standardize">
+          <h2>17) Data cleaning cookbook (high‑yield patterns)</h2>
+          <div class="grid2">
+            <div>
+              <div class="callout"><strong>Think like QA:</strong> clean → validate → re-check. Most marks come from writing checks + explaining decisions.</div>
+              <table class="table">
+                <tr><th>Problem</th><th>Best pattern</th></tr>
+                <tr><td>Sentinel values ("-", "?", "nil")</td><td class="mono">df.replace({"-": pd.NA, "?": pd.NA})</td></tr>
+                <tr><td>Whitespace/case issues</td><td class="mono">s.astype("string").str.strip().str.lower()</td></tr>
+                <tr><td>Invalid categories</td><td class="mono">df.loc[~df[col].isin(valid), col] = pd.NA</td></tr>
+                <tr><td>Range constraints</td><td class="mono">df[col] = df[col].where(df[col].between(lo, hi))</td></tr>
+                <tr><td>Unit conversion</td><td class="mono">df["kg"] = df["g"] / 1000</td></tr>
+                <tr><td>Standardise columns</td><td class="mono">df.rename(columns=lambda c: ...)</td></tr>
+              </table>
+            </div>
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># 1) Standardise columns + obvious missing/sentinels
+COL_FIX = lambda c: c.strip().lower().replace(" ", "_")
+df = df.rename(columns=COL_FIX)
+
+sentinels = {"-": pd.NA, "?": pd.NA, "nil": pd.NA, "none": pd.NA, "": pd.NA}
+df = df.replace(sentinels)
+
+# 2) Strip + normalise key text fields
+for c in ["city", "state", "email"]:
+    if c in df.columns:
+        df[c] = df[c].astype("string").str.strip()
+
+# 3) Parse types safely
+if "date" in df.columns:
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+if "price" in df.columns:
+    df["price"] = pd.to_numeric(df["price"], errors="coerce")
+
+# 4) Validate expectations (fail fast)
+expected = {"id", "date"}
+missing_cols = expected - set(df.columns)
+assert not missing_cols, f"Missing columns: {missing_cols}"
+assert df["id"].notna().all(), "id contains missing"
+
+# 5) Apply rule-based cleaning
+valid_state = {"vic","nsw","qld","sa","wa","tas","act","nt"}
+if "state" in df.columns:
+    df["state"] = df["state"].astype("string").str.lower().str.strip()
+    df.loc[~df["state"].isin(valid_state), "state"] = pd.NA
+
+# Range check example: age 0..120
+if "age" in df.columns:
+    df["age"] = pd.to_numeric(df["age"], errors="coerce")
+    df["age"] = df["age"].where(df["age"].between(0, 120))</code></pre>
+            </div>
+          </div>
+
+          <h3>Audit report snippets (copy/paste)</h3>
+<pre><div class="copy" data-copy>copy</div><code># Missingness summary
+miss = df.isna().mean().sort_values(ascending=False)
+audit_missing = miss[miss &gt; 0]
+
+# Potential key issues
+key = "id"
+audit_dups = df[df.duplicated(key, keep=False)].sort_values(key)
+
+# Quick sanity on numeric columns
+num = df.select_dtypes(include="number")
+audit_ranges = num.agg(["min","max","mean"]).T.sort_values("max", ascending=False)
+
+# Cardinalities (useful for joins)
+audit_nunique = df.nunique(dropna=True).sort_values(ascending=False)
+
+audit_missing.head(20), audit_dups.head(20)</code></pre>
+        </section>
+
+        <section id="encoding" class="card" data-title="encoding get_dummies one hot factorize categorical cut qcut binning feature engineering">
+          <h2>18) Encoding, binning & feature engineering</h2>
+          <div class="grid2">
+            <div>
+              <table class="table">
+                <tr><th>Goal</th><th>Use</th></tr>
+                <tr><td>One-hot encode</td><td class="mono">pd.get_dummies(df, columns=[...], drop_first=True)</td></tr>
+                <tr><td>Label encode</td><td class="mono">codes, uniques = pd.factorize(df[col])</td></tr>
+                <tr><td>Ordered categories</td><td class="mono">pd.Categorical(s, categories=[...], ordered=True)</td></tr>
+                <tr><td>Equal-width bins</td><td class="mono">pd.cut(x, bins=[...], include_lowest=True)</td></tr>
+                <tr><td>Equal-frequency bins</td><td class="mono">pd.qcut(x, q=4, duplicates="drop")</td></tr>
+                <tr><td>Log transform</td><td class="mono">np.log1p(x)</td></tr>
+              </table>
+              <p class="muted" style="margin:10px 0 0">Exam note: explain why binning/encoding helps (linearity, interpretability, model assumptions).</p>
+            </div>
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># One-hot
+X = pd.get_dummies(df, columns=["state", "dept"], drop_first=True)
+
+# Factorize (compact label encoding)
+df["dept_code"], dept_levels = pd.factorize(df["dept"], sort=True)
+
+# Ordered categorical
+order = ["low", "medium", "high"]
+df["risk"] = pd.Categorical(df["risk"], categories=order, ordered=True)
+
+# Binning
+x = df["age"]
+df["age_bin"] = pd.cut(x, bins=[0, 18, 30, 45, 60, 120], include_lowest=True)
+df["income_quartile"] = pd.qcut(df["income"], q=4, duplicates="drop")
+
+# Interactions
+if {"height","weight"}.issubset(df.columns):
+    df["bmi"] = df["weight"] / (df["height"]**2)</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="performance" class="card" data-title="performance memory category chunksize vectorize apply map eval query to_numpy">
+          <h2>19) Performance & memory (when data is big)</h2>
+          <div class="grid2">
+            <div>
+              <div class="callout"><strong>Rule:</strong> prefer vectorised ops over <span class="mono">apply</span>. Use categories. Read only what you need.</div>
+              <table class="table">
+                <tr><th>Need</th><th>Use</th></tr>
+                <tr><td>Read subset of columns</td><td class="mono">usecols=[...]</td></tr>
+                <tr><td>Chunked read</td><td class="mono">pd.read_csv(..., chunksize=100_000)</td></tr>
+                <tr><td>Reduce memory</td><td class="mono">astype("category"), convert_dtypes()</td></tr>
+                <tr><td>Fast conditional</td><td class="mono">np.where(cond, a, b)</td></tr>
+                <tr><td>Fast string ops</td><td class="mono">.str (vectorised), avoid Python loops</td></tr>
+              </table>
+            </div>
+            <div>
+<pre><div class="copy" data-copy>copy</div><code># Read efficiently
+cols = ["id", "date", "state", "sales"]
+df = pd.read_csv("file.csv", usecols=cols, parse_dates=["date"])
+
+# Convert to memory-friendly dtypes
+df["state"] = df["state"].astype("category")
+df = df.convert_dtypes()
+
+# Vectorised conditional
+# if sales &gt; 0 => 'pos' else 'nonpos'
+df["sales_sign"] = np.where(df["sales"] &gt; 0, "pos", "nonpos")
+
+# Chunk processing example
+out = []
+for chunk in pd.read_csv("big.csv", chunksize=200_000):
+    chunk["price"] = pd.to_numeric(chunk["price"], errors="coerce")
+    out.append(chunk.groupby("dept")["price"].mean())
+result = pd.concat(out, axis=1).mean(axis=1)</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section id="viz-guide" class="card" data-title="visualisation guide choose plot chart selection histogram box violin scatter line bar heatmap">
+          <h2>20) Visualisation guide (which plot when?)</h2>
+          <table class="table">
+            <tr><th>Question</th><th>Best chart</th><th>Typical code</th></tr>
+            <tr><td>Distribution of one numeric variable</td><td>Histogram + KDE</td><td class="mono">sns.histplot(df, x="x", kde=True)</td></tr>
+            <tr><td>Compare distribution across groups</td><td>Box / violin</td><td class="mono">sns.boxplot(df, x="g", y="x")</td></tr>
+            <tr><td>Relationship between two numeric vars</td><td>Scatter (+ trend)</td><td class="mono">sns.regplot(df, x="x", y="y")</td></tr>
+            <tr><td>Counts per category</td><td>Bar / countplot</td><td class="mono">sns.countplot(df, x="cat")</td></tr>
+            <tr><td>Time series over time</td><td>Line</td><td class="mono">sns.lineplot(df, x="date", y="y")</td></tr>
+            <tr><td>Two categorical variables</td><td>Heatmap of counts</td><td class="mono">sns.heatmap(pd.crosstab(a,b))</td></tr>
+            <tr><td>Many numeric variables at once</td><td>Correlation heatmap</td><td class="mono">sns.heatmap(df.corr(numeric_only=True))</td></tr>
+          </table>
+
+          <h3>Make plots readable (labels + formatting)</h3>
+<pre><div class="copy" data-copy>copy</div><code>import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set_theme(style="whitegrid", context="notebook")
+
+fig, ax = plt.subplots(figsize=(8,4))
+sns.scatterplot(df, x="height", y="weight", hue="sex", alpha=0.5, ax=ax)
+ax.set(title="Height vs weight", xlabel="Height (m)", ylabel="Weight (kg)")
+ax.legend(title="sex", frameon=True)
+ax.grid(True, alpha=0.25)
+fig.tight_layout()</code></pre>
+        </section>
+
+        <section id="viz-advanced" class="card" data-title="visualisation advanced facetgrid pairplot jointplot regplot annotate formatter subplots">
+          <h2>21) Visualisation advanced patterns (high marks)</h2>
+
+          <h3>A) Facets (small multiples)</h3>
+<pre><div class="copy" data-copy>copy</div><code>import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Same plot repeated per group (great for comparisons)
+g = sns.FacetGrid(df, col="region", col_wrap=3, height=3, sharey=False)
+g.map_dataframe(sns.histplot, x="sales", bins=25)
+g.set_titles(col_template="{col_name}")
+plt.tight_layout()</code></pre>
+
+          <h3>B) Regression / trendline</h3>
+<pre><div class="copy" data-copy>copy</div><code># Adds a fitted line + confidence band
+sns.regplot(df, x="x", y="y", scatter_kws={"alpha": 0.35})
+plt.title("Relationship between x and y")
+plt.tight_layout()</code></pre>
+
+          <h3>C) Pairplot (quick multivariate scan)</h3>
+<pre><div class="copy" data-copy>copy</div><code># Useful for small datasets (can be slow on big ones)
+cols = ["height", "weight", "age", "score", "label"]
+sns.pairplot(df[cols], hue="label", corner=True)
+plt.tight_layout()</code></pre>
+
+          <h3>D) Axis formatting (percent / dollars)</h3>
+<pre><div class="copy" data-copy>copy</div><code>import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
+
+fig, ax = plt.subplots()
+ax.plot(df["date"], df["rate"])
+ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{y:.0%}"))
+ax.set(title="Rate over time", xlabel="date", ylabel="rate")
+fig.autofmt_xdate()
+fig.tight_layout()</code></pre>
+
+          <h3>E) Annotate key points</h3>
+<pre><div class="copy" data-copy>copy</div><code>fig, ax = plt.subplots(figsize=(8,4))
+ax.plot(df["date"], df["sales"])
+
+# annotate max
+i = df["sales"].idxmax()
+ax.scatter([df.loc[i, "date"]], [df.loc[i, "sales"]])
+ax.annotate(
+    "max",
+    xy=(df.loc[i, "date"], df.loc[i, "sales"]),
+    xytext=(10, 10), textcoords="offset points",
+    arrowprops={"arrowstyle": "->", "alpha": 0.6},
+)
+ax.set(title="Sales", xlabel="date", ylabel="sales")
+fig.autofmt_xdate(); fig.tight_layout()</code></pre>
+        </section>
+
+        <section class="card" data-title="quick reference cheats">
+          <h2>Quick reference: selection & filtering</h2>
+          <table class="table">
+            <tr><th>What</th><th>Example</th></tr>
+            <tr><td>Column(s)</td><td class="mono">df["a"], df[["a","b"]]</td></tr>
+            <tr><td>Row slice</td><td class="mono">df.iloc[0:5]</td></tr>
+            <tr><td>Label selection</td><td class="mono">df.loc[df["x"]&gt;0, ["a","b"]]</td></tr>
+            <tr><td>Query string</td><td class="mono">df.query("x &gt; 0 and y == 'A'")</td></tr>
+            <tr><td>Sort</td><td class="mono">df.sort_values(["a","b"], ascending=[True,False])</td></tr>
+            <tr><td>New cols</td><td class="mono">df.assign(z=df["x"]*2)</td></tr>
+          </table>
+        </section>
+
+        <p class="muted" style="text-align:center; margin-top:16px">
+          Built as a single-file offline HTML page. You can edit it freely for your course’s specific topics.
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // copy buttons
+    for (const btn of document.querySelectorAll('[data-copy]')) {
+      btn.addEventListener('click', async () => {
+        const pre = btn.closest('pre');
+        const code = pre ? pre.querySelector('code') : null;
+        if (!code) return;
+        const text = code.innerText;
+        try{
+          await navigator.clipboard.writeText(text);
+          const old = btn.textContent;
+          btn.textContent = 'copied';
+          setTimeout(() => btn.textContent = old, 900);
+        }catch(e){
+          const old = btn.textContent;
+          btn.textContent = 'copy failed';
+          setTimeout(() => btn.textContent = old, 1100);
+        }
+      });
+    }
+
+    // Search (sections + command snippets)
+    const search = document.getElementById('search');
+    const cards = Array.from(document.querySelectorAll('.card'));
+    const resultsEl = document.getElementById('results');
+
+    function buildCodeIndex(){
+      const pres = Array.from(document.querySelectorAll('pre'));
+      pres.forEach((pre, i) => {
+        if (!pre.id) pre.id = `code-${i+1}`;
+      });
+      return pres.map(pre => {
+        const section = pre.closest('section');
+        const sectionId = section?.id || '';
+        const sectionTitle = (section?.querySelector('h2')?.innerText || sectionId || 'Cheatsheet').trim();
+        const code = pre.querySelector('code')?.innerText || '';
+        return { preId: pre.id, sectionId, sectionTitle, code };
+      });
+    }
+
+    const codeIndex = buildCodeIndex();
+
+    function renderResults(q){
+      if (!q){
+        resultsEl.hidden = true;
+        resultsEl.innerHTML = '';
+        return;
+      }
+
+      const qLower = q.toLowerCase();
+      const matches = [];
+
+      for (const item of codeIndex){
+        const codeLower = item.code.toLowerCase();
+        if (!codeLower.includes(qLower)) continue;
+
+        // find the first matching line for a clean snippet
+        const lines = item.code.split(/\r?\n/);
+        const line = lines.find(l => l.toLowerCase().includes(qLower)) || '';
+        matches.push({
+          ...item,
+          line: line.trim().slice(0, 160)
+        });
+        if (matches.length >= 12) break;
+      }
+
+      resultsEl.innerHTML = '';
+
+      if (matches.length === 0){
+        const div = document.createElement('div');
+        div.className = 'muted';
+        div.style.padding = '6px 8px';
+        div.textContent = 'No command matches in code blocks.';
+        resultsEl.appendChild(div);
+        resultsEl.hidden = false;
+        return;
+      }
+
+      for (const m of matches){
+        const a = document.createElement('a');
+        a.className = 'result-item';
+        a.href = `#${m.preId}`;
+        a.dataset.pre = m.preId;
+
+        const t = document.createElement('div');
+        t.className = 'result-title';
+        t.textContent = m.sectionTitle;
+
+        const s = document.createElement('div');
+        s.className = 'result-snippet';
+        s.textContent = m.line || '(match)';
+
+        a.appendChild(t);
+        a.appendChild(s);
+        resultsEl.appendChild(a);
+      }
+
+      resultsEl.hidden = false;
+    }
+
+    function applySearch(){
+      const q = (search.value || '').trim();
+      const qLower = q.toLowerCase();
+
+      // Filter sections (fast narrowing)
+      if (!q){
+        cards.forEach(c => c.style.display = '');
+      } else {
+        for (const c of cards){
+          const hay = (c.getAttribute('data-title') || '') + ' ' + (c.innerText || '');
+          c.style.display = hay.toLowerCase().includes(qLower) ? '' : 'none';
+        }
+      }
+
+      // Command finder results
+      renderResults(q);
+    }
+
+    search.addEventListener('input', applySearch);
+
+    // Enter jumps to first result
+    search.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      const first = resultsEl.querySelector('.result-item');
+      if (first) first.click();
+    });
+
+    // expand/collapse: we implement by toggling all code blocks visibility
+    const expandAll = document.getElementById('expandAll');
+    const collapseAll = document.getElementById('collapseAll');
+
+    function setCodeVisible(visible){
+      document.querySelectorAll('pre').forEach(p => {
+        p.style.display = visible ? '' : 'none';
+      });
+    }
+    expandAll.addEventListener('click', () => setCodeVisible(true));
+    collapseAll.addEventListener('click', () => setCodeVisible(false));
+
+    // Clicking a result scrolls to the matching code block
+    resultsEl.addEventListener('click', (e) => {
+      const item = e.target.closest('.result-item');
+      if (!item) return;
+      e.preventDefault();
+      setCodeVisible(true);
+      const preId = item.dataset.pre;
+      const pre = preId ? document.getElementById(preId) : null;
+      if (!pre) return;
+      pre.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      pre.classList.add('flash');
+      setTimeout(() => pre.classList.remove('flash'), 900);
+      history.replaceState(null, '', `#${preId}`);
+    });
+
+    // Start with code visible (exam mode)
+    setCodeVisible(true);
+  </script>
+</body>
+</html>
